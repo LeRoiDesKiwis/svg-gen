@@ -35,10 +35,12 @@
 #define SIMPLE_PREC
 
 #ifdef SIMPLE_PREC
-typedef float real ;
-typedef Vec2f vec2 ;
-typedef Vec3f vec3 ;
-typedef Vec4f vec4 ;
+namespace svgobjects
+{
+   typedef float real;
+   typedef Vec2f vec2;
+   typedef Vec3f vec3;
+   typedef Vec4f vec4;
 #else
 typedef double real ;
 typedef Vec2d vec2 ;
@@ -46,386 +48,385 @@ typedef Vec3d vec3 ;
 typedef Vec4d vec4 ;
 #endif
 
-// *****************************************************************************
-// orthonormal camera coordinate system
+   // *****************************************************************************
+   // orthonormal camera coordinate system
 
-class CamRefSys
-{
+   class CamRefSys
+   {
    public:
-   vec3 origin, xAxis, yAxis, zAxis ;
+      vec3 origin, xAxis, yAxis, zAxis;
 
-   CamRefSys() ;
-   CamRefSys( const vec3 & look_at, const vec3 & observer, const vec3 & p_vup );
-   void initialize( const vec3 & look_at, const vec3 & observer, const vec3 & p_vup );
-   vec2 world2cam( const vec3 & p ) const ;
-} ;
-// *****************************************************************************
+      CamRefSys();
+      CamRefSys(const vec3& look_at, const vec3& observer, const vec3& p_vup);
+      void initialize(const vec3& look_at, const vec3& observer, const vec3& p_vup);
+      vec2 world2cam(const vec3& p) const;
+   };
 
-class Camera
-{
+   // *****************************************************************************
+
+   class Camera
+   {
    public:
-   CamRefSys src ;
-   Camera( const vec3 & look_at, const vec3 & observer, const vec3 & p_vup ) ;
-   Camera() ;
-   vec2 project( const vec3 & p ) const ;
-};
+      CamRefSys src;
+      Camera(const vec3& look_at, const vec3& observer, const vec3& p_vup);
+      Camera();
+      vec2 project(const vec3& p) const;
+   };
 
-// *****************************************************************************
-// SVGContext:
-// context information (actualy,  just a stream)
+   // *****************************************************************************
+   // SVGContext:
+   // context information (actualy,  just a stream)
 
-class SVGContext
-{
-  public:
-  std::ostream * os ;
-  SVGContext() ;
-} ;
-
-// *****************************************************************************
-// clase para styles de polígonos y quizás otros tipos de objetos
-
-class PathStyle
-{
-  public:
-  PathStyle();
-  void writeSVG( SVGContext & ctx ); // write style attrs to an svg file
-
-  vec3  lines_color,      // lines color, when lines are drawn (draw_lines == true )
-        fill_color ;      // fill color, when fill is drawn (draw_filled == true)
-  bool  draw_lines,       // draw lines joining points (yes/no)
-        close_lines,      // when draw_lines == true, join last point with first (yes/no)
-        draw_filled ;     // fill the polygon (yes(no)
-  real  lines_width ;
-  real  fill_opacity ;    // fill opacity when draw_filled == true (0->transparent; 1->opaque)
-  bool  dashed_lines  ;   // when draw_lines == true, draw dashed lines (yes/no)
-
-  bool use_grad_fill ; // use gradient fill (when draw_filled == true)
-  std::string grad_fill_name ; // name to use for gradient fill
-
-
-} ;
-
-// *****************************************************************************
-// An abstract class for things which can be drawn to an SVG file and can be
-// projected to 2d (must be projected before drawn)
-
-class Object
-{
-  public:
-  Object();
-  virtual void drawSVG( SVGContext & ctx ) = 0 ;
-  virtual void project( const Camera & cam ) = 0 ;
-  virtual ~Object() ;
-
-  bool projected ;  // true when the points have been projected
-  vec2 min,max ;    // when projected==true,
-} ;
-
-// *****************************************************************************
-// class Point
-// A class for an isolated point, drawn with a given radius
-
-class Point : public Object
-{
-  public:
-  Point( vec3 ppos3D, vec3 color );
-  virtual void drawSVG( SVGContext & ctx ) ;
-  virtual void project( const Camera & cam ) ;
-
-  vec3 pos3D, color ;
-  vec2 pos2D ;
-  real radius ; // 0.03 por defecto, se puede cambiar
-};
-
-// *****************************************************************************
-// class Polygon
-// Any Object which is described by a sequence of points
-// it can be a polyline, a polygon, a filled polygon.
-
-class Polygon : public Object // secuencia de points
-{
+   class SVGContext
+   {
    public:
-   Polygon();
+      std::ostream* os;
+      SVGContext();
+   };
 
-   virtual void project( const Camera & cam );
-   virtual void drawSVG( SVGContext & ctx )  ;
-   virtual ~Polygon() ;
+   // *****************************************************************************
+   // clase para styles de polígonos y quizás otros tipos de objetos
 
-   PathStyle         style ;
-   std::vector<vec3> points3D ; // original points
-   std::vector<vec2> points2D ; // projected points
-};
-// *****************************************************************************
-// class ObjectsSet
-// A set of various objects
-
-class ObjectsSet : public Object
-{
+   class PathStyle
+   {
    public:
-   ObjectsSet();
-   virtual void project( const Camera & cam );
-   virtual void drawSVG( SVGContext & ctx )  ;
-   virtual ~ObjectsSet() ;
-   void add( Object * pobj );  // add one object
+      PathStyle();
+      void writeSVG(SVGContext& ctx); // write style attrs to an svg file
 
-   std::vector<Object *> objetos ;
-} ;
+      vec3 lines_color, // lines color, when lines are drawn (draw_lines == true )
+           fill_color; // fill color, when fill is drawn (draw_filled == true)
+      bool draw_lines, // draw lines joining points (yes/no)
+           close_lines, // when draw_lines == true, join last point with first (yes/no)
+           draw_filled; // fill the polygon (yes(no)
+      real lines_width;
+      real fill_opacity; // fill opacity when draw_filled == true (0->transparent; 1->opaque)
+      bool dashed_lines; // when draw_lines == true, draw dashed lines (yes/no)
 
-// *****************************************************************************
-// class Sphere
-// A filled sphere in 3D which is viewed as a filled circle in 2D
+      bool use_grad_fill; // use gradient fill (when draw_filled == true)
+      std::string grad_fill_name; // name to use for gradient fill
+   };
 
-class Sphere : public Object
-{
+   // *****************************************************************************
+   // An abstract class for things which can be drawn to an SVG file and can be
+   // projected to 2d (must be projected before drawn)
+
+   class Object
+   {
    public:
-   Sphere( const vec3 & pcenter3D, real pradius3D );
+      Object();
+      virtual void drawSVG(SVGContext& ctx) = 0;
+      virtual void project(const Camera& cam) = 0;
+      virtual ~Object();
 
-   virtual void project( const Camera & cam );
-   virtual void drawSVG( SVGContext & ctx )  ;
+      bool projected; // true when the points have been projected
+      vec2 min, max; // when projected==true,
+   };
 
-   real radius3D,  // original radius
-        radius2D ; // projected radius (==radius3D actually)
-   vec3 center3D ;
-   vec2 center2D ; // when proyectado == true, 2D center
-};
+   // *****************************************************************************
+   // class Point
+   // A class for an isolated point, drawn with a given radius
 
-// *****************************************************************************
-// class Hemisphere
-// A filled hemisphere in 3D, drawn as 2 semicircles
-
-
-
-class Hemisphere : public ObjectsSet
-{
+   class Point : public Object
+   {
    public:
-   Hemisphere( const vec3 & pcenter3D, real pradius3D, vec3 p_view_dir, bool flip_axes = false ) ;
+      Point(vec3 ppos3D, vec3 color);
+      virtual void drawSVG(SVGContext& ctx);
+      virtual void project(const Camera& cam);
 
-   real radius3D,  // original radius
-        radius2D ; // projected radius (==radius3D actually)
-   vec3 center3D ,
-        view_dir ; // view direction, it is used to align the semicircles
-   vec2 center2D ; // when proyectado == true, 2D center
+      vec3 pos3D, color;
+      vec2 pos2D;
+      real radius; // 0.03 por defecto, se puede cambiar
+   };
 
-   Polygon contour ;
-};
+   // *****************************************************************************
+   // class Polygon
+   // Any Object which is described by a sequence of points
+   // it can be a polyline, a polygon, a filled polygon.
 
-// *****************************************************************************
-// class Segment
-// A polygon with just two points.
-
-class Segment : public Polygon
-{
+   class Polygon : public Object // secuencia de points
+   {
    public:
-   Segment( const vec3 & p0, const vec3 & vd, const vec3 & color, real width ) ;
-   Segment( const vec3 & p0, const vec3 & p1  );
-   Segment( const Point & p0, const Point & p1, real width );
+      Polygon();
 
-};
-// *****************************************************************************
-// Class PolQuad
-// A four points polygon, filled
+      virtual void project(const Camera& cam);
+      virtual void drawSVG(SVGContext& ctx);
+      virtual ~Polygon();
 
-class PolQuad : public Polygon
-{
+      PathStyle style;
+      std::vector<vec3> points3D; // original points
+      std::vector<vec2> points2D; // projected points
+   };
+
+   // *****************************************************************************
+   // class ObjectsSet
+   // A set of various objects
+
+   class ObjectsSet : public Object
+   {
    public:
-   PolQuad( const vec3 & p00, const vec3 & p01, const vec3 & p10, const vec3 & p11 ) ;
-};
+      ObjectsSet();
+      virtual void project(const Camera& cam);
+      virtual void drawSVG(SVGContext& ctx);
+      virtual ~ObjectsSet();
+      void add(Object* pobj); // add one object
 
-// *****************************************************************************
-// class Ellipse
-// A planar ellipse in 3D
+      std::vector<Object*> objetos;
+   };
 
-class Ellipse : public Polygon
-{
+   // *****************************************************************************
+   // class Sphere
+   // A filled sphere in 3D which is viewed as a filled circle in 2D
+
+   class Sphere : public Object
+   {
    public:
-   Ellipse( unsigned n, const vec3 & center, const vec3 & eje1, const vec3 eje2  );
-};
+      Sphere(const vec3& pcenter3D, real pradius3D);
 
-// *****************************************************************************
-// class EllipseSectorZ
-// A sector of an ellipse (the ellipse is perpendicular to Z)
-// the 'sector' is defined by two angles about Y-axis (used for the parallel map)
+      virtual void project(const Camera& cam);
+      virtual void drawSVG(SVGContext& ctx);
 
-class EllipseSectorZ : public ObjectsSet
-{
+      real radius3D, // original radius
+           radius2D; // projected radius (==radius3D actually)
+      vec3 center3D;
+      vec2 center2D; // when proyectado == true, 2D center
+   };
+
+   // *****************************************************************************
+   // class Hemisphere
+   // A filled hemisphere in 3D, drawn as 2 semicircles
+
+
+   class Hemisphere : public ObjectsSet
+   {
    public:
-   EllipseSectorZ( unsigned n, real lonX, real lonY  );
-   Polygon * ppol ;
-   Point   * ppun0,
-           * ppun1 ;
-};
+      Hemisphere(const vec3& pcenter3D, real pradius3D, vec3 p_view_dir, bool flip_axes = false);
 
-// *****************************************************************************
-// class EllipseSectorRadial
-// A sector of an ellipse (the ellipse is perpendicular to Z)
-// the 'sector' is defined by two angles about Z-axis (used for the radial map)
+      real radius3D, // original radius
+           radius2D; // projected radius (==radius3D actually)
+      vec3 center3D,
+           view_dir; // view direction, it is used to align the semicircles
+      vec2 center2D; // when proyectado == true, 2D center
 
-class EllipseSectorRadial : public ObjectsSet
-{
+      Polygon contour;
+   };
+
+   // *****************************************************************************
+   // class Segment
+   // A polygon with just two points.
+
+   class Segment : public Polygon
+   {
    public:
-   EllipseSectorRadial( unsigned n, real plonX, real plonY  );
+      Segment(const vec3& p0, const vec3& vd, const vec3& color, real width);
+      Segment(const vec3& p0, const vec3& p1);
+      Segment(const Point& p0, const Point& p1, real width);
+   };
 
-   Polygon *ppol ;
-   Point   *ppun0, *ppun1 ;
-   real    alpha0, alpha1 ;  // angulos inicial y final de este sector
-   real    lonX, lonY ;      // longitudes de los ejes inicial y final
-   vec3    point0, point1 ;  // points extremos del segmento
-};
+   // *****************************************************************************
+   // Class PolQuad
+   // A four points polygon, filled
 
-// *****************************************************************************
-// class SegmentsVert
-// A set of segments joining the points in two polygons (must be the same size)
-
-class SegmentsVert : public ObjectsSet
-{
+   class PolQuad : public Polygon
+   {
    public:
-   SegmentsVert( unsigned dn, const Polygon & p1, const Polygon & p2 );
-} ;
+      PolQuad(const vec3& p00, const vec3& p01, const vec3& p10, const vec3& p11);
+   };
 
-// *****************************************************************************
-// class Axes
-//
-// three segments for the orthonormal world reference system
+   // *****************************************************************************
+   // class Ellipse
+   // A planar ellipse in 3D
 
-class Axes : public ObjectsSet
-{
+   class Ellipse : public Polygon
+   {
    public:
-   Axes( real widthl, bool flip = false );
-} ;
+      Ellipse(unsigned n, const vec3& center, const vec3& eje1, const vec3 eje2);
+   };
 
-// *****************************************************************************
-// class YAxisProjectorsSegments
-// a set of segments from each vertex of a polygon towards Y axis
+   // *****************************************************************************
+   // class EllipseSectorZ
+   // A sector of an ellipse (the ellipse is perpendicular to Z)
+   // the 'sector' is defined by two angles about Y-axis (used for the parallel map)
 
-class YAxisProjectorsSegments : public ObjectsSet
-{
+   class EllipseSectorZ : public ObjectsSet
+   {
    public:
-   YAxisProjectorsSegments( unsigned dn, const Polygon & p1 );
-} ;
+      EllipseSectorZ(unsigned n, real lonX, real lonY);
+      Polygon* ppol;
+      Point *ppun0,
+            *ppun1;
+   };
 
-// *****************************************************************************
-// class YAxisCylinder
-// A unit-radius cylinder, centered in the origin, from Y=-1 to Y=1
+   // *****************************************************************************
+   // class EllipseSectorRadial
+   // A sector of an ellipse (the ellipse is perpendicular to Z)
+   // the 'sector' is defined by two angles about Z-axis (used for the radial map)
 
-class YAxisCylinder : public ObjectsSet
-{
+   class EllipseSectorRadial : public ObjectsSet
+   {
    public:
-   YAxisCylinder( const Camera & cam );
-} ;
+      EllipseSectorRadial(unsigned n, real plonX, real plonY);
 
-// *****************************************************************************
-// class ZAxisCylinder
-// A unit-radius cylinder, centered in the origin, from Z=-1 to Z=1
+      Polygon* ppol;
+      Point *ppun0, *ppun1;
+      real alpha0, alpha1; // angulos inicial y final de este sector
+      real lonX, lonY; // longitudes de los ejes inicial y final
+      vec3 point0, point1; // points extremos del segmento
+   };
 
-class ZAxisCylinder : public ObjectsSet
-{
+   // *****************************************************************************
+   // class SegmentsVert
+   // A set of segments joining the points in two polygons (must be the same size)
+
+   class SegmentsVert : public ObjectsSet
+   {
    public:
-   ZAxisCylinder( const Camera & cam );
-} ;
+      SegmentsVert(unsigned dn, const Polygon& p1, const Polygon& p2);
+   };
 
-// *****************************************************************************
-// class JoiningQuads
-// A set of filled polygons (PolQuad objects) linking two same-size polygons
-// (for each )
+   // *****************************************************************************
+   // class Axes
+   //
+   // three segments for the orthonormal world reference system
 
-class JoiningQuads : public ObjectsSet
-{
+   class Axes : public ObjectsSet
+   {
    public:
-   JoiningQuads( const Polygon & p1, const Polygon & p2 );
-} ;
+      Axes(real widthl, bool flip = false);
+   };
 
-// *****************************************************************************
-// class SpherePolygon
-// a polygon obtained by projecting another one onto the Sphere
+   // *****************************************************************************
+   // class YAxisProjectorsSegments
+   // a set of segments from each vertex of a polygon towards Y axis
 
-class SpherePolygon : public Polygon
-{
-  public:
-  SpherePolygon( const Polygon & orig, bool clip = false ) ;
-};
-
-// *****************************************************************************
-// class HorPlanePolygon
-// a polygon obtained by projecting another one onto the (horizontal) plane at Y=0
-
-class HorPlanePolygon : public Polygon
-{
-  public:
-  HorPlanePolygon( const Polygon & orig, bool clip_neg ) ;
-};
-
-// *****************************************************************************
-// class ExtrVertSegm
-// two vertical segments joining extreme-X vertexes on two polygons
-// (two polygons of similar size with vertically aligned vertexes)
-
-class ExtrVertSegm : public ObjectsSet
-{
-  public:
-  ExtrVertSegm( Polygon & pol1, Polygon & pol2, const Camera & cam ) ;
-};
-
-
-// *****************************************************************************
-// class YCylinderPoint
-// a point obtained by projecting another one onto the Y-axis cylinder
-
-class YCylinderPoint : public Point
-{
-  public:
-  YCylinderPoint( Point & ppoint );
-} ;
-
-// *****************************************************************************
-// class YCylinderPolygon
-// a polygon obtained by projecting another polygon onto the Y-axis cylinder
-
-class YCylinderPolygon : public Polygon
-{
-  public:
-  YCylinderPolygon( const Polygon & orig ) ;
-};
-
-// *****************************************************************************
-// class ZCylinderPolygon
-// a polygon obtained by projecting another polygon onto the Y-axis cylinder
-
-class ZCylinderPolygon : public Polygon
-{
-  public:
-  ZCylinderPolygon( const Polygon & orig ) ;
-};
-
-// *****************************************************************************
-// class ZCylinderPolygonWithSector
-// a ZCylinderPolygon but with a sector added
-
-class ZCylinderPolygonWithSector : public Polygon
-{
-  public:
-  ZCylinderPolygonWithSector( const Polygon & orig, real ang0, real ang1,
-                                                    real lonX, real lonY ) ;
-};
-
-// *****************************************************************************
-// class Figure
-// A container for a set of objects which can be drawn to a SVG file.
-// It can be written to a SVG file, the output includes the whole SVG elements
-// (headers, footers, bounding box, etc....)
-
-class Figure
-{
+   class YAxisProjectorsSegments : public ObjectsSet
+   {
    public:
+      YAxisProjectorsSegments(unsigned dn, const Polygon& p1);
+   };
 
-   Figure( ) ;
-   void drawSVG( const std::string & nombre_arch ) ;
+   // *****************************************************************************
+   // class YAxisCylinder
+   // A unit-radius cylinder, centered in the origin, from Y=-1 to Y=1
 
-   Camera     cam ;      // camera used to project all the points
-   ObjectsSet objetos ;  // set of objects in the figure
-   real       width_cm ; // width (in centimeters) in the SVG header
-   bool       flip_axes ; // true to flip axes (see Axes::Axes), false by default
+   class YAxisCylinder : public ObjectsSet
+   {
+   public:
+      YAxisCylinder(const Camera& cam);
+   };
 
-   std::vector< std::string > rad_fill_grad_names ; // name of radial fill gradients to output
-} ;
+   // *****************************************************************************
+   // class ZAxisCylinder
+   // A unit-radius cylinder, centered in the origin, from Z=-1 to Z=1
+
+   class ZAxisCylinder : public ObjectsSet
+   {
+   public:
+      ZAxisCylinder(const Camera& cam);
+   };
+
+   // *****************************************************************************
+   // class JoiningQuads
+   // A set of filled polygons (PolQuad objects) linking two same-size polygons
+   // (for each )
+
+   class JoiningQuads : public ObjectsSet
+   {
+   public:
+      JoiningQuads(const Polygon& p1, const Polygon& p2);
+   };
+
+   // *****************************************************************************
+   // class SpherePolygon
+   // a polygon obtained by projecting another one onto the Sphere
+
+   class SpherePolygon : public Polygon
+   {
+   public:
+      SpherePolygon(const Polygon& orig, bool clip = false);
+   };
+
+   // *****************************************************************************
+   // class HorPlanePolygon
+   // a polygon obtained by projecting another one onto the (horizontal) plane at Y=0
+
+   class HorPlanePolygon : public Polygon
+   {
+   public:
+      HorPlanePolygon(const Polygon& orig, bool clip_neg);
+   };
+
+   // *****************************************************************************
+   // class ExtrVertSegm
+   // two vertical segments joining extreme-X vertexes on two polygons
+   // (two polygons of similar size with vertically aligned vertexes)
+
+   class ExtrVertSegm : public ObjectsSet
+   {
+   public:
+      ExtrVertSegm(Polygon& pol1, Polygon& pol2, const Camera& cam);
+   };
+
+
+   // *****************************************************************************
+   // class YCylinderPoint
+   // a point obtained by projecting another one onto the Y-axis cylinder
+
+   class YCylinderPoint : public Point
+   {
+   public:
+      YCylinderPoint(Point& ppoint);
+   };
+
+   // *****************************************************************************
+   // class YCylinderPolygon
+   // a polygon obtained by projecting another polygon onto the Y-axis cylinder
+
+   class YCylinderPolygon : public Polygon
+   {
+   public:
+      YCylinderPolygon(const Polygon& orig);
+   };
+
+   // *****************************************************************************
+   // class ZCylinderPolygon
+   // a polygon obtained by projecting another polygon onto the Y-axis cylinder
+
+   class ZCylinderPolygon : public Polygon
+   {
+   public:
+      ZCylinderPolygon(const Polygon& orig);
+   };
+
+   // *****************************************************************************
+   // class ZCylinderPolygonWithSector
+   // a ZCylinderPolygon but with a sector added
+
+   class ZCylinderPolygonWithSector : public Polygon
+   {
+   public:
+      ZCylinderPolygonWithSector(const Polygon& orig, real ang0, real ang1,
+                                 real lonX, real lonY);
+   };
+
+   // *****************************************************************************
+   // class Figure
+   // A container for a set of objects which can be drawn to a SVG file.
+   // It can be written to a SVG file, the output includes the whole SVG elements
+   // (headers, footers, bounding box, etc....)
+
+   class Figure
+   {
+   public:
+      Figure();
+      void drawSVG(const std::string& nombre_arch);
+
+      Camera cam; // camera used to project all the points
+      ObjectsSet objetos; // set of objects in the figure
+      real width_cm; // width (in centimeters) in the SVG header
+      bool flip_axes; // true to flip axes (see Axes::Axes), false by default
+
+      std::vector<std::string> rad_fill_grad_names; // name of radial fill gradients to output
+   };
+}
 
 #endif

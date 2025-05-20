@@ -23,7 +23,7 @@
 #include "svgobjects.hpp"
 
 // Aux functions
-
+using namespace svgobjects;
 // -----------------------------------------------------------------------------
 
 void write_radial_gradient_def( std::ostream & os, const std::string & name )

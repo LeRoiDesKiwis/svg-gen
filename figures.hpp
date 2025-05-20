@@ -24,6 +24,7 @@
 
 #include "svgobjects.hpp"
 
+using namespace svgobjects;
 // -----------------------------------------------------------------------------
 
 class Figure1_HatBox : public Figure
